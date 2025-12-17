@@ -103,5 +103,3 @@ if prompt:
                     "role": "assistant",
                     "content": error_msg
                 })
-
-
