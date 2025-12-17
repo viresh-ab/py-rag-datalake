@@ -15,7 +15,6 @@ st.set_page_config(
     layout="centered"
 )
 
-st.title("💬 Data Lake RAG")
 st.title("🖥️🗄️ Markelytics - Data Lake")
 st.caption("Chat with your OneDrive CASE_STUDIES documents")
 
@@ -113,4 +112,5 @@ if prompt:
                     "role": "assistant",
                     "content": error_msg
                 })
+
 
