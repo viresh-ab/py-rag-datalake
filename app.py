@@ -16,6 +16,26 @@ st.set_page_config(
 st.title("🖥️🗄️ Markelytics - Data Lake")
 st.caption("Chat with your OneDrive CASE_STUDIES documents")
 
+st.markdown("""
+<style>
+/* Hide Streamlit default UI */
+header {display: none;}
+footer {display: none;}
+section[data-testid="stSidebar"] {display: none;}
+
+/* Remove padding */
+.stApp {
+    padding: 0;
+}
+
+/* Show ONLY main content */
+.stMainBlockContainer {
+    padding: 0rem 2rem;
+    max-width: 100%;
+}
+</style>
+""", unsafe_allow_html=True)
+
 # ---------------------------------
 # Vector DB status
 # ---------------------------------
@@ -104,5 +124,6 @@ if prompt:
                     "role": "assistant",
                     "content": error_msg
                 })
+
 
 
