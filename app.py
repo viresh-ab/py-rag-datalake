@@ -33,7 +33,7 @@ with st.expander("🔄 Run OneDrive Ingestion", expanded=False):
     if st.button("Run Ingestion"):
         with st.spinner("Ingesting documents from OneDrive..."):
             result = subprocess.run(
-                 [sys.executable, "-m", "pip", "list"],
+                [sys.executable, "python", "ingest.py", "pip", "list"],
                 capture_output=True,
                 text=True
             )
@@ -104,6 +104,7 @@ if prompt:
                     "role": "assistant",
                     "content": error_msg
                 })
+
 
 
 
