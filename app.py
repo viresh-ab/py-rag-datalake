@@ -1,7 +1,6 @@
 import streamlit as st
 import subprocess
 from rag import ask
-from pypdf import PdfReader
 from vector_store import load_index
 
 # ---------------------------------
@@ -104,4 +103,5 @@ if prompt:
                     "role": "assistant",
                     "content": error_msg
                 })
+
 
