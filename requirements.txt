@@ -2,6 +2,7 @@ streamlit
 openai
 faiss-cpu
 pypdf
+PyPDF2
 msal
 requests
 python-dotenv
