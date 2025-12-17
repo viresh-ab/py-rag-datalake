@@ -1,6 +1,9 @@
 from io import BytesIO
-from pypdf import PdfReader
 from openai import OpenAI
+try:
+    from pypdf import PdfReader
+except ImportError:
+    from PyPDF2 import PdfReader
 
 from onedrive_client import (
     get_folder_id_by_name,
@@ -73,3 +76,4 @@ def ingest():
 
 if __name__ == "__main__":
     ingest()
+
