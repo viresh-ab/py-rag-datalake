@@ -1,5 +1,6 @@
 import streamlit as st
 import subprocess
+import sys
 from rag import ask
 from vector_store import load_index
 
@@ -9,10 +10,13 @@ from vector_store import load_index
 st.set_page_config(
     page_title="Data Lake RAG",
     page_icon="💬",
+    page_title="Markelytics Solutions | Datalake",
+    page_icon="🌐",
     layout="centered"
 )
 
 st.title("💬 Data Lake RAG")
+st.title("🖥️🗄️ Markelytics - Data Lake")
 st.caption("Chat with your OneDrive CASE_STUDIES documents")
 
 # ---------------------------------
@@ -24,6 +28,12 @@ with st.expander("📦 Vector DB Status", expanded=False):
         st.success(f"Vector DB ready • {index.ntotal} chunks indexed")
     except Exception:
         st.error("Vector DB not found. Run ingestion.")
+# with st.expander("📦 Vector DB Status", expanded=False):
+#     try:
+#         index, meta = load_index()
+#         st.success(f"Vector DB ready • {index.ntotal} chunks indexed")
+#     except Exception:
+#         st.error("Vector DB not found. Run ingestion.")
 
 # ---------------------------------
 # Ingestion section
@@ -32,7 +42,7 @@ with st.expander("🔄 Run OneDrive Ingestion", expanded=False):
     if st.button("Run Ingestion"):
         with st.spinner("Ingesting documents from OneDrive..."):
             result = subprocess.run(
-                ["python", "ingest.py"],
+                [sys.executable, "ingest.py"],
                 capture_output=True,
                 text=True
             )
@@ -103,3 +113,4 @@ if prompt:
                     "role": "assistant",
                     "content": error_msg
                 })
+
