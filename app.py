@@ -12,34 +12,53 @@ st.set_page_config(
     page_icon="🌐",
     layout="centered"
 )
-
-st.title("🖥️🗄️ Markelytics - Data Lake")
-st.caption("Chat with your OneDrive CASE_STUDIES documents")
 import streamlit as st
 
 st.markdown(
     """
     <style>
-    /* Hide Streamlit default UI */
+    /* --- Hide Streamlit chrome --- */
     header { display: none !important; }
     footer { display: none !important; }
     section[data-testid="stSidebar"] { display: none !important; }
     div[data-testid="stToolbar"] { display: none !important; }
 
-    /* Main content only */
-    .stMainBlockContainer {
-        max-width: 100% !important;
-        padding: 0 !important;
+    /* --- Fix root app layout --- */
+    html, body, .stApp {
+        height: 100%;
+        margin: 0;
+        padding: 0;
     }
 
-    /* Remove extra spacing */
-    .stApp {
-        padding-top: 0 !important;
+    /* --- Fix main container --- */
+    .stMainBlockContainer {
+        max-width: 100% !important;
+        padding: 1rem 2rem 6rem 2rem !important; /* bottom space for chat */
+        min-height: 100vh;
+        box-sizing: border-box;
+    }
+
+    /* --- Fix chat input sticking to bottom --- */
+    div[data-testid="stChatInput"] {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background: white;
+        padding: 0.75rem 1rem;
+        border-top: 1px solid #e5e7eb;
+        z-index: 999;
+    }
+
+    /* --- Prevent content hiding behind chat --- */
+    .stMainBlockContainer > div:last-child {
+        margin-bottom: 5rem;
     }
     </style>
     """,
     unsafe_allow_html=True
 )
+
 
 # ---------------------------------
 # Vector DB status
@@ -129,6 +148,7 @@ if prompt:
                     "role": "assistant",
                     "content": error_msg
                 })
+
 
 
 
