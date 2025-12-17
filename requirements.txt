@@ -1,0 +1,8 @@
+streamlit
+openai
+faiss-cpu
+pypdf
+msal
+requests
+python-dotenv
+numpy
