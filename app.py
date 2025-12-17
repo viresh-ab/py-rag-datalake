@@ -14,19 +14,7 @@ st.set_page_config(
 )
 st.title("💬 Markelytics - Data Lake")
 st.caption("Chat with your OneDrive CASE_STUDIES documents")
-st.markdown(
-    """
-    <style>
-    .stAppHeader{
-        display: none !important;
-    }
-    .._container_gzau3_1{
-        display: none !important;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+
 
 
 # ---------------------------------
@@ -117,6 +105,7 @@ if prompt:
                     "role": "assistant",
                     "content": error_msg
                 })
+
 
 
 
