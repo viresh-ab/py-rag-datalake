@@ -1,5 +1,7 @@
 from io import BytesIO
 from openai import OpenAI
+
+# --- Safe PDF import ---
 try:
     from pypdf import PdfReader
 except ImportError:
@@ -10,6 +12,7 @@ from onedrive_client import (
     list_pdfs_from_folder_id,
     download_pdf
 )
+
 from vector_store import add_vectors, reset_index
 
 client = OpenAI()
@@ -33,7 +36,8 @@ def embed(texts):
 
 def ingest():
     reset_index()
-    # 1. Resolve OneDrive folder
+
+    # 1️⃣ Get OneDrive folder
     folder_id = get_folder_id_by_name("CASE_STUDIES")
     pdfs = list_pdfs_from_folder_id(folder_id)
 
@@ -42,12 +46,11 @@ def ingest():
 
     all_chunks = []
 
-    # 2. Read PDFs
+    # 2️⃣ Read PDFs
     for pdf in pdfs:
         pdf_bytes = download_pdf(pdf["id"])
         reader = PdfReader(BytesIO(pdf_bytes))
 
-        # ✅ FIXED LINE (properly closed)
         text = " ".join(
             page.extract_text() or ""
             for page in reader.pages
@@ -56,7 +59,7 @@ def ingest():
         if not text.strip():
             continue
 
-        # 3. Chunk text
+        # 3️⃣ Chunk
         for chunk in chunk_text(text):
             all_chunks.append({
                 "text": chunk,
@@ -66,14 +69,8 @@ def ingest():
     if not all_chunks:
         raise ValueError("PDFs found but no extractable text")
 
-    # 4. Embed + store
+    # 4️⃣ Embed + store
     vectors = embed([c["text"] for c in all_chunks])
     add_vectors(vectors, all_chunks)
 
-    # Windows-safe print
-    print(f"Ingested {len(all_chunks)} chunks from OneDrive")
-
-
-if __name__ == "__main__":
-    ingest()
-
+    return len(all_chunks)
