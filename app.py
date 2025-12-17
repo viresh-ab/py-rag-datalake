@@ -1,4 +1,3 @@
-import streamlit as st
 import subprocess
 import sys
 from rag import ask
@@ -7,6 +6,7 @@ from vector_store import load_index
 # ---------------------------------
 # Page config
 # ---------------------------------
+import streamlit as st
 st.set_page_config(
     page_title="Markelytics Solutions | Datalake",
     page_icon="🌐",
@@ -103,6 +103,7 @@ if prompt:
                     "role": "assistant",
                     "content": error_msg
                 })
+
 
 
 
