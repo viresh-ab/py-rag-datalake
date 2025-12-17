@@ -17,25 +17,16 @@ st.caption("Chat with your OneDrive CASE_STUDIES documents")
 st.markdown(
     """
     <style>
-    /* Hide Streamlit header & toolbar */
-    header { display: none !important; }
-    div[data-testid="stToolbar"] { display: none !important; }
-
-    /* Hide sidebar */
-    section[data-testid="stSidebar"] {
+    .stAppHeader{
         display: none !important;
     }
-
-    /* Fix main layout */
-    .stMainBlockContainer {
-        max-width: 100% !important;
-        padding: 1rem 2rem !important;
+    .._container_gzau3_1{
+        display: none !important;
     }
     </style>
     """,
     unsafe_allow_html=True
 )
-
 
 
 # ---------------------------------
@@ -126,6 +117,7 @@ if prompt:
                     "role": "assistant",
                     "content": error_msg
                 })
+
 
 
 
