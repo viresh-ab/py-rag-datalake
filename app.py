@@ -14,6 +14,27 @@ st.set_page_config(
 )
 st.title("💬 Markelytics - Data Lake")
 st.caption("Chat with your OneDrive CASE_STUDIES documents")
+st.markdown(
+    """
+    <style>
+    /* Hide Streamlit header & toolbar */
+    header { display: none !important; }
+    div[data-testid="stToolbar"] { display: none !important; }
+
+    /* Hide sidebar */
+    section[data-testid="stSidebar"] {
+        display: none !important;
+    }
+
+    /* Fix main layout */
+    .stMainBlockContainer {
+        max-width: 100% !important;
+        padding: 1rem 2rem !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 
 
@@ -105,6 +126,7 @@ if prompt:
                     "role": "assistant",
                     "content": error_msg
                 })
+
 
 
 
