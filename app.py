@@ -1,7 +1,7 @@
 import streamlit as st
 import subprocess
 from rag import ask
-from vector_store import load_index
+from vector_store import load_index, list_all_sources_with_counts
 
 # ---------------------------------
 # Page config
@@ -45,6 +45,49 @@ with st.expander("🔄 Run OneDrive Ingestion", expanded=False):
                 st.code(result.stderr)
 
 # ---------------------------------
+# Helpers (INTENT DETECTION)
+# ---------------------------------
+def is_listing_intent(text):
+    t = text.lower().strip()
+    phrases = [
+        "list all case studies",
+        "list all case study files",
+        "list all files",
+        "show all case studies",
+        "what case studies are available",
+        "files in my drive"
+    ]
+    return any(p in t for p in phrases)
+
+
+def is_existence_intent(text):
+    t = text.lower()
+    phrases = [
+        "is there any",
+        "are there any",
+        "do we have",
+        "any case study related to"
+    ]
+    return any(p in t for p in phrases)
+
+
+def detect_industry(text):
+    t = text.lower()
+    if "fashion" in t:
+        return "fashion"
+    if "fmcg" in t:
+        return "fmcg"
+    return None
+
+
+def detect_explicit_document(text, all_sources):
+    t = text.lower()
+    for src in all_sources:
+        if src.lower().replace(".pdf", "") in t:
+            return src
+    return None
+
+# ---------------------------------
 # Chat session state
 # ---------------------------------
 if "messages" not in st.session_state:
@@ -68,7 +111,6 @@ for msg in st.session_state.messages:
 prompt = st.chat_input("Ask a question about your case studies...")
 
 if prompt:
-    # Show user message
     st.session_state.messages.append({
         "role": "user",
         "content": prompt
@@ -77,29 +119,98 @@ if prompt:
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # Generate assistant response
+    sources_map = list_all_sources_with_counts()
+    all_sources = list(sources_map.keys())
+
+    # -----------------------------
+    # 1️⃣ LISTING INTENT (NO LLM)
+    # -----------------------------
+    if is_listing_intent(prompt):
+        response = "### 📁 Case Studies in Your Data Lake\n\n"
+        for s in sorted(all_sources):
+            response += f"- {s}\n"
+
+        with st.chat_message("assistant"):
+            st.markdown(response)
+
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": response,
+            "sources": all_sources
+        })
+        st.stop()
+
+    # -----------------------------
+    # 2️⃣ EXISTENCE INTENT (NO LLM)
+    # -----------------------------
+    if is_existence_intent(prompt):
+        industry = detect_industry(prompt)
+        matched = []
+
+        if industry:
+            matched = [s for s in all_sources if industry in s.lower()]
+
+        if matched:
+            response = (
+                f"Yes. There {'is' if len(matched)==1 else 'are'} "
+                f"{len(matched)} {industry.capitalize()} case "
+                f"{'study' if len(matched)==1 else 'studies'} available:\n\n"
+            )
+            for m in matched:
+                response += f"- {m}\n"
+        else:
+            response = f"No case studies related to the {industry.capitalize()} industry are available."
+
+        with st.chat_message("assistant"):
+            st.markdown(response)
+
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": response,
+            "sources": matched
+        })
+        st.stop()
+
+    # -----------------------------
+    # 3️⃣ DOCUMENT-SPECIFIC INTENT
+    # -----------------------------
+    explicit_doc = detect_explicit_document(prompt, all_sources)
+
+    if explicit_doc:
+        answer, _ = ask(
+            prompt,
+            required_keyword=explicit_doc.replace(".pdf", "")
+        )
+
+        with st.chat_message("assistant"):
+            st.markdown(answer)
+            with st.expander("📄 Sources"):
+                st.write(f"- {explicit_doc}")
+
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": answer,
+            "sources": [explicit_doc]
+        })
+        st.stop()
+
+    # -----------------------------
+    # 4️⃣ NORMAL RAG (FILTERED)
+    # -----------------------------
+    industry = detect_industry(prompt)
+
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
-            try:
-                answer, sources = ask(prompt)
-                st.markdown(answer)
+            answer, srcs = ask(prompt, required_keyword=industry)
+            st.markdown(answer)
 
-                if sources:
-                    with st.expander("📄 Sources"):
-                        for s in sources:
-                            st.write(f"- {s}")
+            if srcs:
+                with st.expander("📄 Sources"):
+                    for s in srcs:
+                        st.write(f"- {s}")
 
-                # Save assistant message
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": answer,
-                    "sources": sources
-                })
-
-            except Exception as e:
-                error_msg = f"❌ Error: {str(e)}"
-                st.error(error_msg)
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": error_msg
-                })
+    st.session_state.messages.append({
+        "role": "assistant",
+        "content": answer,
+        "sources": srcs
+    })
