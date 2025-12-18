@@ -14,7 +14,7 @@ st.set_page_config(
 )
 
 st.title("🏢 Markelytics Datalake")
-st.caption("⚡ Fast, accurate responses powered by embeddings and LLMs)
+st.caption("⚡ Fast, accurate responses powered by embeddings and LLMs")
 
 # ---------------------------------
 # Vector DB status
@@ -104,6 +104,7 @@ if prompt:
                     "role": "assistant",
                     "content": error_msg
                 })
+
 
 
 
