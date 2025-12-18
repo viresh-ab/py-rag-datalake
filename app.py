@@ -13,7 +13,7 @@ st.set_page_config(
     layout="centered"
 )
 
-st.title("🏢 Markelytics Datalake")
+st.title("🏢 Markelytics Data Lake")
 st.caption("⚡ Fast, accurate responses powered by embeddings and LLMs")
 
 # ---------------------------------
@@ -104,6 +104,7 @@ if prompt:
                     "role": "assistant",
                     "content": error_msg
                 })
+
 
 
 
