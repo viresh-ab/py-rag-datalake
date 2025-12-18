@@ -13,8 +13,8 @@ st.set_page_config(
     layout="centered"
 )
 
-st.title("💬 Data Lake RAG")
-st.caption("Chat with your OneDrive CASE_STUDIES documents")
+st.title("🏢 Markelytics Datalake")
+st.caption("⚡ Fast, accurate responses powered by embeddings and LLMs)
 
 # ---------------------------------
 # Vector DB status
@@ -104,6 +104,7 @@ if prompt:
                     "role": "assistant",
                     "content": error_msg
                 })
+
 
 
 
