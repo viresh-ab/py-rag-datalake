@@ -1,5 +1,6 @@
 from openai import OpenAI
 from vector_store import search
+import re
 
 client = OpenAI()
 
@@ -9,10 +10,30 @@ client = OpenAI()
 EMBED_MODEL = "text-embedding-3-large"
 CHAT_MODEL = "gpt-4.1-mini"
 
-TOP_K = 8                   # fetch more chunks, filter strictly later
-SIMILARITY_THRESHOLD = 0.78 # strong relevance only
-MIN_CHUNKS_PER_SOURCE = 2   # 🔥 KEY RULE
-MAX_SOURCES = 3
+TOP_K = 12
+SIMILARITY_THRESHOLD = 0.78
+MIN_CHUNKS_PER_SOURCE = 2
+MIN_TOPIC_MATCHES = 2      # 🔥 NEW
+MAX_SOURCES = 2            # keep blogs clean
+
+
+# =========================
+# TOPIC KEYWORDS
+# =========================
+TOPIC_KEYWORDS = [
+    "shopper insight",
+    "shopper insights",
+    "consumer behavior",
+    "purchase decision",
+    "buying behavior",
+    "path to purchase"
+]
+
+
+def topic_match_score(text: str) -> int:
+    """Count how many topic keywords appear in text"""
+    text = text.lower()
+    return sum(1 for kw in TOPIC_KEYWORDS if kw in text)
 
 
 # =========================
@@ -32,7 +53,6 @@ def embed_query(query: str):
 def ask(question: str):
     q_vec = embed_query(question)
 
-    # 🔍 Retrieve chunks
     results = search(q_vec, top_k=TOP_K)
 
     texts = []
@@ -46,28 +66,51 @@ def ask(question: str):
         text = r.get("text", "")
         source = r.get("source")
 
-        if text:
-            texts.append(text)
-
-        if not source:
+        if not text or not source:
             continue
 
-        # Track contribution per document
+        topic_hits = topic_match_score(text)
+
+        if topic_hits == 0:
+            continue  # ❌ chunk is not about shopper insights
+
+        texts.append(text)
+
         if source not in source_stats:
             source_stats[source] = {
-                "count": 0,
+                "chunk_count": 0,
+                "topic_hits": 0,
                 "max_score": 0
             }
 
-        source_stats[source]["count"] += 1
+        source_stats[source]["chunk_count"] += 1
+        source_stats[source]["topic_hits"] += topic_hits
         source_stats[source]["max_score"] = max(
             source_stats[source]["max_score"], score
         )
 
-    # 🧠 Build context
+    # =========================
+    # STRICT SOURCE FILTERING
+    # =========================
+    filtered_sources = {
+        src: stats
+        for src, stats in source_stats.items()
+        if stats["chunk_count"] >= MIN_CHUNKS_PER_SOURCE
+        and stats["topic_hits"] >= MIN_TOPIC_MATCHES
+    }
+
+    # Rank by topic dominance, then similarity
+    sources = sorted(
+        filtered_sources,
+        key=lambda s: (
+            filtered_sources[s]["topic_hits"],
+            filtered_sources[s]["max_score"]
+        ),
+        reverse=True
+    )[:MAX_SOURCES]
+
     context = "\n\n".join(texts)
 
-    # 🤖 LLM call
     response = client.chat.completions.create(
         model=CHAT_MODEL,
         messages=[
@@ -75,9 +118,9 @@ def ask(question: str):
                 "role": "system",
                 "content": (
                     "You are a market research expert. "
-                    "Write clearly and professionally. "
+                    "Write a professional blog. "
                     "Use ONLY the provided context. "
-                    "If context is insufficient, say so."
+                    "If the context is insufficient, say so clearly."
                 )
             },
             {
@@ -86,23 +129,5 @@ def ask(question: str):
             }
         ]
     )
-
-    # =========================
-    # 🔥 STRICT SOURCE SELECTION
-    # =========================
-    # Only keep documents that contributed
-    # at least 2 strong chunks
-    filtered_sources = {
-        src: stats
-        for src, stats in source_stats.items()
-        if stats["count"] >= MIN_CHUNKS_PER_SOURCE
-    }
-
-    # Rank by strength
-    sources = sorted(
-        filtered_sources,
-        key=lambda s: filtered_sources[s]["max_score"],
-        reverse=True
-    )[:MAX_SOURCES]
 
     return response.choices[0].message.content, sources
