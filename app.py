@@ -1,4 +1,6 @@
 import streamlit as st
+import subprocess
+import os
 from rag import ask
 
 st.set_page_config(
@@ -10,8 +12,34 @@ st.set_page_config(
 st.title("📊 Markelytics Data Lake")
 st.caption("Fast, accurate responses powered by embeddings and LLMs")
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+FAISS_PATH = os.path.join(BASE_DIR, "data", "faiss", "index.faiss")
+
 # =========================
-# CHAT INPUT
+# INGESTION BUTTON
+# =========================
+if not os.path.exists(FAISS_PATH):
+    st.warning("Vector index not found. Please run ingestion first.")
+
+    if st.button("🚀 Run Ingestion"):
+        with st.spinner("Running ingestion... this may take a few minutes"):
+            result = subprocess.run(
+                ["python", "ingest.py"],
+                capture_output=True,
+                text=True
+            )
+
+        if result.returncode == 0:
+            st.success("Ingestion completed successfully. Reloading app...")
+            st.experimental_rerun()
+        else:
+            st.error("Ingestion failed")
+            st.code(result.stderr)
+
+    st.stop()
+
+# =========================
+# CHAT UI
 # =========================
 question = st.chat_input("Ask a question about your case studies...")
 
@@ -31,43 +59,3 @@ if question:
 
         except RuntimeError as e:
             st.error(str(e))
-
-
-# ---------------------------------
-# Vector DB status
-# ---------------------------------
-# with st.expander("📦 Vector DB Status", expanded=False):
-#     try:
-#         index, meta = load_index()
-#         st.success(f"Vector DB ready • {index.ntotal} chunks indexed")
-#     except Exception:
-#         st.error("Vector DB not found. Run ingestion.")
-
-# ---------------------------------
-# Ingestion section
-# ---------------------------------
-# with st.expander("🔄 Run OneDrive Ingestion", expanded=False):
-#     if st.button("Run Ingestion"):
-#         with st.spinner("Ingesting documents from OneDrive..."):
-#             result = subprocess.run(
-#                    [sys.executable, "ingest.py"],
-#                 capture_output=True,
-#                 text=True
-#             )
-
-#             if result.returncode == 0:
-#                 st.success("Ingestion completed successfully")
-#                 st.code(result.stdout)
-#             else:
-#                 st.error("Ingestion failed")
-#                 st.code(result.stderr)
-
-# ---------------------------------
-# Chat session state
-# ---------------------------------
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
-# ---------------------------------
-# Render chat history
-# ---------------------------------
