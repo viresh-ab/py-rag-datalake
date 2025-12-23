@@ -1,70 +1,116 @@
 import streamlit as st
 import subprocess
-import os
+import sys
 from rag import ask
+from vector_store import load_index
 
-# =========================
-# PAGE CONFIG
-# =========================
+# ---------------------------------
+# Page config
+# ---------------------------------
 st.set_page_config(
-    page_title="Markelytics Data Lake",
-    page_icon="📊",
+    page_title="Data Lake RAG",
+    page_icon="💬",
     layout="centered"
 )
 
-st.title("📊 Markelytics Data Lake")
-st.caption("Fast, accurate responses powered by embeddings and LLMs")
+st.title("🏢 Markelytics Data Lake")
+st.caption("⚡ Fast, accurate responses powered by embeddings and LLMs")
 
-# =========================
-# PATHS
-# =========================
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-FAISS_PATH = os.path.join(BASE_DIR, "data", "faiss", "index.faiss")
+# ---------------------------------
+# Vector DB status
+# ---------------------------------
+with st.expander("📦 Vector DB Status", expanded=False):
+    try:
+        index, meta = load_index()
+        st.success(f"Vector DB ready • {index.ntotal} chunks indexed")
+    except Exception:
+        st.error("Vector DB not found. Run ingestion.")
 
-# =========================
-# INGESTION UI (ALWAYS FIRST)
-# =========================
-index_exists = os.path.exists(FAISS_PATH)
-
-if not index_exists:
-    st.warning("Vector index not found. Please run ingestion first.")
-
-    if st.button("🚀 Run Ingestion"):
-        with st.spinner("Running ingestion... this may take a few minutes"):
+# ---------------------------------
+# Ingestion section
+# ---------------------------------
+with st.expander("🔄 Run OneDrive Ingestion", expanded=False):
+    if st.button("Run Ingestion"):
+        with st.spinner("Ingesting documents from OneDrive..."):
             result = subprocess.run(
-                ["python", "ingest.py"],
+                   [sys.executable, "ingest.py"],
                 capture_output=True,
                 text=True
             )
 
-        if result.returncode == 0:
-            st.success("Ingestion completed successfully. Reloading app...")
-            st.experimental_rerun()
-        else:
-            st.error("Ingestion failed")
-            st.code(result.stderr)
+            if result.returncode == 0:
+                st.success("Ingestion completed successfully")
+                st.code(result.stdout)
+            else:
+                st.error("Ingestion failed")
+                st.code(result.stderr)
 
-    # ⛔ Stop here — DO NOT show chat yet
-    st.stop()
+# ---------------------------------
+# Chat session state
+# ---------------------------------
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-# =========================
-# CHAT UI (ONLY AFTER INGESTION)
-# =========================
-question = st.chat_input("Ask a question about your case studies...")
+# ---------------------------------
+# Render chat history
+# ---------------------------------
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
 
-if question:
+        if msg["role"] == "assistant" and msg.get("sources"):
+            with st.expander("📄 Sources"):
+                for s in msg["sources"]:
+                    st.write(f"- {s}")
+
+# ---------------------------------
+# Chat input
+# ---------------------------------
+prompt = st.chat_input("Ask a question about your case studies...")
+
+if prompt:
+    # Show user message
+    st.session_state.messages.append({
+        "role": "user",
+        "content": prompt
+    })
+
     with st.chat_message("user"):
-        st.write(question)
+        st.markdown(prompt)
 
+    # Generate assistant response
     with st.chat_message("assistant"):
-        try:
-            answer, sources = ask(question)
-            st.write(answer)
+        with st.spinner("Thinking..."):
+            try:
+                answer, sources = ask(prompt)
+                st.markdown(answer)
 
-            if sources:
-                st.markdown("### 📄 Sources")
-                for s in sources:
-                    st.markdown(f"- **{s}**")
+                if sources:
+                    with st.expander("📄 Sources"):
+                        for s in sources:
+                            st.write(f"- {s}")
 
-        except RuntimeError as e:
-            st.error(str(e))
+                # Save assistant message
+                st.session_state.messages.append({
+                    "role": "assistant",
+                    "content": answer,
+                    "sources": sources
+                })
+
+            except Exception as e:
+                error_msg = f"❌ Error: {str(e)}"
+                st.error(error_msg)
+                st.session_state.messages.append({
+                    "role": "assistant",
+                    "content": error_msg
+                })
+
+
+
+
+
+
+
+
+
+
