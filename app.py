@@ -1,20 +1,37 @@
 import streamlit as st
-import subprocess
-import sys
 from rag import ask
-from vector_store import load_index
 
-# ---------------------------------
-# Page config
-# ---------------------------------
 st.set_page_config(
-    page_title="Data Lake RAG",
-    page_icon="💬",
+    page_title="Markelytics Data Lake",
+    page_icon="📊",
     layout="centered"
 )
 
-st.title("🏢 Markelytics Data Lake")
-st.caption("⚡ Fast, accurate responses powered by embeddings and LLMs")
+st.title("📊 Markelytics Data Lake")
+st.caption("Fast, accurate responses powered by embeddings and LLMs")
+
+# =========================
+# CHAT INPUT
+# =========================
+question = st.chat_input("Ask a question about your case studies...")
+
+if question:
+    with st.chat_message("user"):
+        st.write(question)
+
+    with st.chat_message("assistant"):
+        try:
+            answer, sources = ask(question)
+            st.write(answer)
+
+            if sources:
+                st.markdown("### 📄 Sources")
+                for s in sources:
+                    st.markdown(f"- **{s}**")
+
+        except RuntimeError as e:
+            st.error(str(e))
+
 
 # ---------------------------------
 # Vector DB status
@@ -54,63 +71,3 @@ if "messages" not in st.session_state:
 # ---------------------------------
 # Render chat history
 # ---------------------------------
-for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
-
-        if msg["role"] == "assistant" and msg.get("sources"):
-            with st.expander("📄 Sources"):
-                for s in msg["sources"]:
-                    st.write(f"- {s}")
-
-# ---------------------------------
-# Chat input
-# ---------------------------------
-prompt = st.chat_input("Ask a question about your case studies...")
-
-if prompt:
-    # Show user message
-    st.session_state.messages.append({
-        "role": "user",
-        "content": prompt
-    })
-
-    with st.chat_message("user"):
-        st.markdown(prompt)
-
-    # Generate assistant response
-    with st.chat_message("assistant"):
-        with st.spinner("Thinking..."):
-            try:
-                answer, sources = ask(prompt)
-                st.markdown(answer)
-
-                if sources:
-                    with st.expander("📄 Sources"):
-                        for s in sources:
-                            st.write(f"- {s}")
-
-                # Save assistant message
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": answer,
-                    "sources": sources
-                })
-
-            except Exception as e:
-                error_msg = f"❌ Error: {str(e)}"
-                st.error(error_msg)
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": error_msg
-                })
-
-
-
-
-
-
-
-
-
-
