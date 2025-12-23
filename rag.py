@@ -9,12 +9,14 @@ client = OpenAI()
 EMBED_MODEL = "text-embedding-3-large"
 CHAT_MODEL = "gpt-4.1-mini"
 
-TOP_K = 5
-SIMILARITY_THRESHOLD = 0.75
+TOP_K = 8                   # fetch more chunks, filter strictly later
+SIMILARITY_THRESHOLD = 0.78 # strong relevance only
+MIN_CHUNKS_PER_SOURCE = 2   # 🔥 KEY RULE
 MAX_SOURCES = 3
 
+
 # =========================
-# EMBED QUERY
+# EMBEDDING
 # =========================
 def embed_query(query: str):
     res = client.embeddings.create(
@@ -23,20 +25,21 @@ def embed_query(query: str):
     )
     return res.data[0].embedding
 
+
 # =========================
 # ASK (RAG PIPELINE)
 # =========================
 def ask(question: str):
     q_vec = embed_query(question)
 
+    # 🔍 Retrieve chunks
     results = search(q_vec, top_k=TOP_K)
 
     texts = []
-    source_scores = {}
+    source_stats = {}
 
     for r in results:
         score = r.get("score", 0)
-
         if score < SIMILARITY_THRESHOLD:
             continue
 
@@ -46,12 +49,25 @@ def ask(question: str):
         if text:
             texts.append(text)
 
-        if source:
-            if source not in source_scores or score > source_scores[source]:
-                source_scores[source] = score
+        if not source:
+            continue
 
+        # Track contribution per document
+        if source not in source_stats:
+            source_stats[source] = {
+                "count": 0,
+                "max_score": 0
+            }
+
+        source_stats[source]["count"] += 1
+        source_stats[source]["max_score"] = max(
+            source_stats[source]["max_score"], score
+        )
+
+    # 🧠 Build context
     context = "\n\n".join(texts)
 
+    # 🤖 LLM call
     response = client.chat.completions.create(
         model=CHAT_MODEL,
         messages=[
@@ -59,8 +75,9 @@ def ask(question: str):
                 "role": "system",
                 "content": (
                     "You are a market research expert. "
-                    "Answer ONLY using the provided context. "
-                    "If the context is insufficient, say so clearly."
+                    "Write clearly and professionally. "
+                    "Use ONLY the provided context. "
+                    "If context is insufficient, say so."
                 )
             },
             {
@@ -70,9 +87,21 @@ def ask(question: str):
         ]
     )
 
+    # =========================
+    # 🔥 STRICT SOURCE SELECTION
+    # =========================
+    # Only keep documents that contributed
+    # at least 2 strong chunks
+    filtered_sources = {
+        src: stats
+        for src, stats in source_stats.items()
+        if stats["count"] >= MIN_CHUNKS_PER_SOURCE
+    }
+
+    # Rank by strength
     sources = sorted(
-        source_scores,
-        key=lambda x: source_scores[x],
+        filtered_sources,
+        key=lambda s: filtered_sources[s]["max_score"],
         reverse=True
     )[:MAX_SOURCES]
 
