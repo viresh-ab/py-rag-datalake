@@ -65,9 +65,13 @@ def reset_index():
 # SEARCH
 # =========================
 def search(query_vector, top_k=5):
-    index, meta = load_index()
-    D, I = index.search(
-        np.array([query_vector]).astype("float32"),
-        top_k
-    )
-    return [meta[i] for i in I[0]]
+    distances, indices = index.search(query_vector, top_k)
+
+    results = []
+    for score, idx in zip(distances[0], indices[0]):
+        item = metadata[idx]
+        item["score"] = float(score)   # ADD similarity score
+        results.append(item)
+
+    return results
+
