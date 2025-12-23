@@ -19,31 +19,31 @@ st.caption("⚡ Fast, accurate responses powered by embeddings and LLMs")
 # ---------------------------------
 # Vector DB status
 # ---------------------------------
-with st.expander("📦 Vector DB Status", expanded=False):
-    try:
-        index, meta = load_index()
-        st.success(f"Vector DB ready • {index.ntotal} chunks indexed")
-    except Exception:
-        st.error("Vector DB not found. Run ingestion.")
+# with st.expander("📦 Vector DB Status", expanded=False):
+#     try:
+#         index, meta = load_index()
+#         st.success(f"Vector DB ready • {index.ntotal} chunks indexed")
+#     except Exception:
+#         st.error("Vector DB not found. Run ingestion.")
 
 # ---------------------------------
 # Ingestion section
 # ---------------------------------
-with st.expander("🔄 Run OneDrive Ingestion", expanded=False):
-    if st.button("Run Ingestion"):
-        with st.spinner("Ingesting documents from OneDrive..."):
-            result = subprocess.run(
-                   [sys.executable, "ingest.py"],
-                capture_output=True,
-                text=True
-            )
+# with st.expander("🔄 Run OneDrive Ingestion", expanded=False):
+#     if st.button("Run Ingestion"):
+#         with st.spinner("Ingesting documents from OneDrive..."):
+#             result = subprocess.run(
+#                    [sys.executable, "ingest.py"],
+#                 capture_output=True,
+#                 text=True
+#             )
 
-            if result.returncode == 0:
-                st.success("Ingestion completed successfully")
-                st.code(result.stdout)
-            else:
-                st.error("Ingestion failed")
-                st.code(result.stderr)
+#             if result.returncode == 0:
+#                 st.success("Ingestion completed successfully")
+#                 st.code(result.stdout)
+#             else:
+#                 st.error("Ingestion failed")
+#                 st.code(result.stderr)
 
 # ---------------------------------
 # Chat session state
@@ -104,6 +104,7 @@ if prompt:
                     "role": "assistant",
                     "content": error_msg
                 })
+
 
 
 
