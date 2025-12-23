@@ -3,6 +3,9 @@ import subprocess
 import os
 from rag import ask
 
+# =========================
+# PAGE CONFIG
+# =========================
 st.set_page_config(
     page_title="Markelytics Data Lake",
     page_icon="📊",
@@ -12,13 +15,18 @@ st.set_page_config(
 st.title("📊 Markelytics Data Lake")
 st.caption("Fast, accurate responses powered by embeddings and LLMs")
 
+# =========================
+# PATHS
+# =========================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 FAISS_PATH = os.path.join(BASE_DIR, "data", "faiss", "index.faiss")
 
 # =========================
-# INGESTION BUTTON
+# INGESTION UI (ALWAYS FIRST)
 # =========================
-if not os.path.exists(FAISS_PATH):
+index_exists = os.path.exists(FAISS_PATH)
+
+if not index_exists:
     st.warning("Vector index not found. Please run ingestion first.")
 
     if st.button("🚀 Run Ingestion"):
@@ -36,10 +44,11 @@ if not os.path.exists(FAISS_PATH):
             st.error("Ingestion failed")
             st.code(result.stderr)
 
+    # ⛔ Stop here — DO NOT show chat yet
     st.stop()
 
 # =========================
-# CHAT UI
+# CHAT UI (ONLY AFTER INGESTION)
 # =========================
 question = st.chat_input("Ask a question about your case studies...")
 
