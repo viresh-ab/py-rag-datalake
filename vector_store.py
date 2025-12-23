@@ -13,22 +13,26 @@ INDEX_PATH = os.path.join(FAISS_DIR, "index.faiss")
 META_PATH = os.path.join(FAISS_DIR, "metadata.pkl")
 
 # =========================
-# LOAD INDEX + METADATA
+# LOAD INDEX SAFELY
 # =========================
-if not os.path.exists(INDEX_PATH):
-    raise RuntimeError("❌ FAISS index not found. Run ingest.py first.")
+index = None
+metadata = []
 
-index = faiss.read_index(INDEX_PATH)
-
-with open(META_PATH, "rb") as f:
-    metadata = pickle.load(f)
+if os.path.exists(INDEX_PATH) and os.path.exists(META_PATH):
+    index = faiss.read_index(INDEX_PATH)
+    with open(META_PATH, "rb") as f:
+        metadata = pickle.load(f)
 
 # =========================
 # SEARCH
 # =========================
 def search(query_vector, top_k=5):
-    query_vector = np.array([query_vector]).astype("float32")
+    if index is None:
+        raise RuntimeError(
+            "Vector index not found. Please run ingestion first."
+        )
 
+    query_vector = np.array([query_vector]).astype("float32")
     distances, indices = index.search(query_vector, top_k)
 
     results = []
